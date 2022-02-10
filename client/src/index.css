@@ -27,6 +27,7 @@ code {
   height: 600px;
   border: 1px solid black;
   margin: 40px;
+  background-color: aqua;
 }
 
 .gameBox {

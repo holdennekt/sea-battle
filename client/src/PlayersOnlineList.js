@@ -3,7 +3,7 @@ const PlayersOnlineList = ({ players }) => {
     <div className="players">
       <h2>Players</h2>
       {players.map((player) => (
-        <div className="player" id={player.socketId} key={player.socketId}>
+        <div className="player" id={player.userId} key={player.userId}>
           <label className="playerName">{player.username}</label>
           <p className="playerStatus">{player.inGame ? "playing" : "chilling"}</p>
           <button className="invite" onClick={player.invite}>Invite</button>
