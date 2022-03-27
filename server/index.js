@@ -20,15 +20,14 @@ app.get('*', (req, res) => {
 const server = app.listen(port, hostname);
 const io = new Server(server);
 
-io.on('connection', (connection) => {
-
+io.on('connection', connection => {
   const { username } = connection.handshake.query;
   const player = { username, userId: connection.id, inGame: false };
   connection.player = player;
   console.log('player at connection:', player);
 
   connection.broadcast.emit('user:connected', player);
-  
+
   const players = [];
   for (const [id, socket] of io.of('/').sockets) {
     if (id === connection.id) continue;
@@ -38,7 +37,7 @@ io.on('connection', (connection) => {
   console.log({ playersOnline: players });
 
   connection.onAny((...args) => {
-    console.log(connection.player.username, "send event:", ...args);
+    console.log(connection.player.username, 'send event:', ...args);
   });
 
   connection.on('invite:send', ({ toUserId }) => {
@@ -47,7 +46,7 @@ io.on('connection', (connection) => {
 
   connection.on('invite:cancel', ({ toUserId }) => {
     io.to(toUserId).emit('invite:cancel', { fromUserId: player.userId });
-  });  
+  });
 
   connection.on('invite:reject', ({ fromUserId }) => {
     io.to(fromUserId).emit('invite:reject', { toUserId: player.userId });
@@ -61,7 +60,11 @@ io.on('connection', (connection) => {
   connection.on('status:change', ({ inGame, inGameWith }) => {
     for (const [id, socket] of io.of('/').sockets) {
       if (id === connection.id || id === inGameWith.userId) continue;
-      socket.emit('status:change', { fromUserId: player.userId, inGame, inGameWith });
+      socket.emit('status:change', {
+        fromUserId: player.userId,
+        inGame,
+        inGameWith,
+      });
     }
   });
 
