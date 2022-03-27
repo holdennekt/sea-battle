@@ -20,76 +20,72 @@ app.get('*', (req, res) => {
 
 const server = app.listen(port, hostname);
 const io = new Server(server);
-const sessions = new Map();     //сделать через бд
-
-io.use((socket, next) => {
-  socket.player = socket.handshake.auth.user;
-  console.log('player at io.use:', socket.player);
-  if (socket.player.sessionId) {
-    const session = sessions.get(socket.player.sessionId);
-    if (session) {
-      socket.player.userId = session.userId;
-      return next();
-    }
-  } else {
-    socket.player.sessionId = nanoid(8);
-    socket.player.userId = nanoid(8);
-  }
-  next();
-});
+// const sessions = new Map();     //сделать через бд
 
 io.on('connection', (connection) => {
 
-  const player = connection.player;
+  const { username } = connection.handshake.query;
+  const player = { username, userId: connection.id };
+  connection.player = player;
+
+  // const session = sessions.get(player.sessionId);
+  // if (session) player.userId = session.userId;
+  // else {
+  //   player.sessionId = nanoid();
+  //   player.userId = nanoid();
+  // }
+
   console.log('player at connection:', player);
 
-  sessions.set(player.sessionId, {
-    userId: player.userId,
-    username: player.username,
-    connected: true,
-  });
+  // sessions.set(player.sessionId, {
+  //   userId: player.userId,
+  //   username: player.username,
+  //   connected: true,
+  // });
 
-  connection.emit('session', {
-    sessionId: player.sessionId,
-    userId: player.userId,
-  });
+  // connection.emit('session', { sessionId: player.sessionId });
 
-  connection.join(player.userId);
+  // connection.join(player.userId);
 
-  connection.broadcast.emit('new player', player);
+  connection.broadcast.emit('user:connected', player);
   
   const players = [];
   for (const [id, socket] of io.of('/').sockets) {
-    if (socket === connection) continue;
+    if (id === connection.id) continue;
     players.push(socket.player);
   }
-  connection.emit('players', players);
+  connection.emit('users', players);
+  console.log(players);
 
-  connection.on('inviteGame', (to) => {
-    io.to(to.userId).emit('inviteGame', player);
+  connection.on('invite:send', (to) => {
+    io.to(to).emit('invite:send', player.userId);
   });
 
-  connection.on('acceptGame', (from) => {
-    io.to(from.userId).emit('acceptGame', player);
+  connection.on('invite:cancel', (to) => {
+    io.to(to).emit('invite:cancel', player.userId);
+  });  
+
+  connection.on('invite:reject', (to) => {
+    io.to(to).emit('invite:reject', player.userId);
+  });
+
+  connection.on('invite:accept', (from) => {
+    io.to(from).emit('invite:accept', player.userId);
     //start new game here
   });
 
-  connection.on('rejectGame', (to) => {
-    io.to(to.userId).emit('rejectGame', player);
-  });
-
   connection.on('disconnect', async () => {
-    const matchingSockets = await io.in(player.userId).allSockets();
+    const matchingSockets = await io.in(connection.id).allSockets();
     const isDisconnected = matchingSockets.size === 0;
     if (isDisconnected) {
-      connection.broadcast.emit('player disconnected', player);
+      connection.broadcast.emit('user:disconnected', player);
       console.log(`user ${player.username} disconnected`);
       // update the connection status of the session
-      sessions.set(player.sessionId, {
-        userId: player.userId,
-        username: player.username,
-        connected: false,
-      });
+      // sessions.set(player.sessionId, {
+      //   userId: player.userId,
+      //   username: player.username,
+      //   connected: false,
+      // });
     }
   });
 
