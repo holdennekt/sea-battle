@@ -10,10 +10,10 @@ const Login = ({ username, setUsername }) => {
     if (trimmed.length > 2) {
       setUsername(trimmed);
       setError(false);
-      localStorage.setItem('username', JSON.stringify(trimmed));
-      navigate('/home');
+      localStorage.setItem("username", JSON.stringify(trimmed));
+      navigate("/home");
     } else setError(true);
-  }
+  };
   return (
     <div className="login-box">
       <input
@@ -24,14 +24,16 @@ const Login = ({ username, setUsername }) => {
         placeholder="Your username goes here..."
         spellCheck="false"
       />
-      {error && <h2 className="login-error">Username must be at least 3 character long</h2>}
-      <button
-        className="login-button"
-        onClick={handleClick}>
-          Confirm
+      {error && (
+        <h2 className="login-error">
+          Username must be at least 3 character long
+        </h2>
+      )}
+      <button className="login-button" onClick={handleClick}>
+        Confirm
       </button>
     </div>
   );
-}
- 
+};
+
 export default Login;

@@ -2,7 +2,6 @@
 
 const express = require('express');
 const { Server } = require('socket.io');
-const { nanoid } = require('nanoid');
 
 const hostname = 'localhost';
 const port = 8000;
@@ -20,32 +19,13 @@ app.get('*', (req, res) => {
 
 const server = app.listen(port, hostname);
 const io = new Server(server);
-// const sessions = new Map();     //сделать через бд
 
 io.on('connection', (connection) => {
 
   const { username } = connection.handshake.query;
-  const player = { username, userId: connection.id };
+  const player = { username, userId: connection.id, inGame: false };
   connection.player = player;
-
-  // const session = sessions.get(player.sessionId);
-  // if (session) player.userId = session.userId;
-  // else {
-  //   player.sessionId = nanoid();
-  //   player.userId = nanoid();
-  // }
-
   console.log('player at connection:', player);
-
-  // sessions.set(player.sessionId, {
-  //   userId: player.userId,
-  //   username: player.username,
-  //   connected: true,
-  // });
-
-  // connection.emit('session', { sessionId: player.sessionId });
-
-  // connection.join(player.userId);
 
   connection.broadcast.emit('user:connected', player);
   
@@ -55,23 +35,34 @@ io.on('connection', (connection) => {
     players.push(socket.player);
   }
   connection.emit('users', players);
-  console.log(players);
+  console.log({ playersOnline: players });
 
-  connection.on('invite:send', (to) => {
-    io.to(to).emit('invite:send', player.userId);
+  connection.onAny((...args) => {
+    console.log(connection.player.username, "send event:", ...args);
   });
 
-  connection.on('invite:cancel', (to) => {
-    io.to(to).emit('invite:cancel', player.userId);
+  connection.on('invite:send', ({ toUserId }) => {
+    io.to(toUserId).emit('invite:send', { fromUserId: player.userId });
+  });
+
+  connection.on('invite:cancel', ({ toUserId }) => {
+    io.to(toUserId).emit('invite:cancel', { fromUserId: player.userId });
   });  
 
-  connection.on('invite:reject', (to) => {
-    io.to(to).emit('invite:reject', player.userId);
+  connection.on('invite:reject', ({ fromUserId }) => {
+    io.to(fromUserId).emit('invite:reject', { toUserId: player.userId });
   });
 
-  connection.on('invite:accept', (from) => {
-    io.to(from).emit('invite:accept', player.userId);
+  connection.on('invite:accept', ({ fromUserId }) => {
+    io.to(fromUserId).emit('invite:accept', { toUserId: player.userId });
     //start new game here
+  });
+
+  connection.on('status:change', ({ inGame, inGameWith }) => {
+    for (const [id, socket] of io.of('/').sockets) {
+      if (id === connection.id || id === inGameWith.userId) continue;
+      socket.emit('status:change', { fromUserId: player.userId, inGame, inGameWith });
+    }
   });
 
   connection.on('disconnect', async () => {
@@ -80,12 +71,6 @@ io.on('connection', (connection) => {
     if (isDisconnected) {
       connection.broadcast.emit('user:disconnected', player);
       console.log(`user ${player.username} disconnected`);
-      // update the connection status of the session
-      // sessions.set(player.sessionId, {
-      //   userId: player.userId,
-      //   username: player.username,
-      //   connected: false,
-      // });
     }
   });
 

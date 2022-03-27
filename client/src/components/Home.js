@@ -12,29 +12,30 @@ const Home = ({ username }) => {
   const startGame = (opponent) => {
     setGame({
       isStarted: true,
-      opponent
+      opponent,
     });
   };
 
-  const { users, sendInvite, cancelInvite, rejectInvite, acceptInvite } = useSocket(startGame);
+  const endGame = () => {
+    setGame({ isStarted: false });
+  };
+
+  const { users, sendInvite, cancelInvite, rejectInvite, acceptInvite } =
+    useSocket(startGame, endGame);
 
   return (
     <div className="home-container">
       <nav>
-        <img className="nav-icon" src={Logo} alt="SeaBattle logo here"/>
+        <img className="nav-icon" src={Logo} alt="SeaBattle logo here" />
         <p className="nav-icon-title">SeaBattle</p>
         <p className="nav-username">{username}</p>
-        <p
-          className="nav-edit-username-button"
-          onClick={() => navigate('/')}>
+        <p className="nav-edit-username-button" onClick={() => navigate("/")}>
           Edit
         </p>
       </nav>
-      {
-        game.isStarted
-        ?
+      {game.isStarted ? (
         <Game opponent={game.opponent} />
-        :
+      ) : (
         <Players
           players={users}
           sendInvite={sendInvite}
@@ -42,9 +43,9 @@ const Home = ({ username }) => {
           rejectInvite={rejectInvite}
           acceptInvite={acceptInvite}
         />
-      }
+      )}
     </div>
   );
 };
- 
+
 export default Home;

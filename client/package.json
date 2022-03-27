@@ -16,7 +16,8 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "lint": "prettier -w ./src && eslint --fix ./src"
   },
   "proxy": "http://localhost:8000/",
   "eslintConfig": {

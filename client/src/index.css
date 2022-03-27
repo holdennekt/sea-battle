@@ -1,11 +1,13 @@
-* { box-sizing: border-box; }
+* {
+  box-sizing: border-box;
+}
 
 body {
   margin: 0;
 }
 
 code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+  font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New",
     monospace;
 }
 
@@ -28,15 +30,15 @@ code {
   width: 300px;
   height: 30px;
   padding: 0 0 0 10px;
-  border: 1.5px solid #4D5B9E;
+  border: 1.5px solid #4d5b9e;
   border-radius: 15px;
-  font-family: 'Inter';
+  font-family: "Inter";
 }
 
 .login-error {
   margin: 0;
   margin-top: 10px;
-  font-family: 'Karla';
+  font-family: "Karla";
   font-size: 20px;
   color: #e63946;
   letter-spacing: -0.05rem;
@@ -47,9 +49,9 @@ code {
   height: 30px;
   margin-top: 10px;
   border-radius: 15px;
-  background-color: #4D5B9E;
-  color: #F5F7FB;
-  font-family: 'Inter';
+  background-color: #4d5b9e;
+  color: #f5f7fb;
+  font-family: "Inter";
   font-size: 16px;
   cursor: pointer;
   border: none;
@@ -76,14 +78,14 @@ nav {
 .nav-icon-title {
   margin: 0;
   margin-left: 10px;
-  font-family: 'Karla';
+  font-family: "Karla";
   font-size: 25px;
 }
 
 .nav-username {
   margin: 0;
   margin-left: auto;
-  font-family: 'Inter';
+  font-family: "Inter";
   font-weight: 700;
   font-size: 15px;
 }
@@ -94,7 +96,7 @@ nav {
   border: 1px solid rgb(72, 115, 156);
   margin: 0;
   margin-left: 10px;
-  font-family: 'Inter';
+  font-family: "Inter";
   text-align: center;
   cursor: pointer;
 }
@@ -117,7 +119,7 @@ nav {
 
 .players-no-online {
   margin: 0;
-  font-family: 'Inter';
+  font-family: "Inter";
   font-size: 50px;
 }
 
@@ -126,22 +128,34 @@ nav {
   padding: 20px;
   height: 70px;
   display: flex;
-  justify-content: space-between;
   align-items: center;
   box-shadow: 0 0 7px #bbbbbb;
   border-radius: 10px;
 }
 
 .player-username {
-  font-family: 'Karla';
+  margin: 0;
+  font-family: "Karla";
   font-size: 25px;
+}
+
+.player-status {
+  margin: 0;
+  margin-left: 10px;
+  font-family: "Karla";
+  font-size: 15px;
+  color: #727272;
+}
+
+.player-buttons {
+  margin-left: auto;
 }
 
 .player-invite-button {
   padding: 5px 10px;
   border-radius: 15px;
   border: 1px solid rgb(72, 115, 156);
-  font-family: 'Inter';
+  font-family: "Inter";
   font-size: 15px;
   cursor: pointer;
 }
@@ -150,7 +164,7 @@ nav {
   padding: 5px 10px;
   border-radius: 15px;
   border: 1px solid rgb(72, 115, 156);
-  font-family: 'Inter';
+  font-family: "Inter";
   font-size: 15px;
   cursor: pointer;
   background-color: rgb(30, 218, 155);
@@ -160,18 +174,18 @@ nav {
   padding: 5px 10px;
   border-radius: 15px;
   border: 1px solid rgb(72, 115, 156);
-  font-family: 'Inter';
+  font-family: "Inter";
   font-size: 15px;
   cursor: pointer;
   background-color: rgb(224, 109, 109);
   margin-left: 10px;
 }
 
-.player-invited-button {
+.player-invite-disabled-button {
   padding: 5px 10px;
   border-radius: 15px;
   border: 1px solid rgb(72, 115, 156);
-  font-family: 'Inter';
+  font-family: "Inter";
   font-size: 15px;
   background-color: rgb(200, 200, 200);
 }
@@ -180,7 +194,7 @@ nav {
   padding: 5px 10px;
   border-radius: 15px;
   border: 1px solid rgb(72, 115, 156);
-  font-family: 'Inter';
+  font-family: "Inter";
   font-size: 15px;
   cursor: pointer;
   background-color: rgb(224, 109, 109);

@@ -1,29 +1,16 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import io from "socket.io-client";
+import registerHandlers from "./registerListeners";
 import useLocalStorage from "./useLocalStorage";
 
 const SERVER_URL = "http://localhost:8000";
 
-const test = [
-  { username: 'Nikita', userId: 'jfgbvyebghjvj236'},
-  { username: 'Pashka', userId: ';utbcwhgvr24ut' },
-  { username: 'Vova', userId: 'tyeuybclgkhv52' },
-  { username: 'Danik', userId: 'fgahsjgbhsgvfq2' },
-  { username: 'Manzos', userId: 'qwrtw ehekbyte2' },
-  { username: 'Bohdan', userId: 'w9p877gggbwe' },
-  { username: 'Sanyok', userId: '3562vjdgbldsejb'},
-];
-
 const useSocket = (startGame) => {
-  // локальний стан гравців онлайн
+  // локальний стан гравців онлайн і статусу їх запрошень
   const [users, setUsers] = useState([]);
-  // локальний стан усіх надісланих запрошень і тіх, що надійшли до користувача
-  const [sentInvites, setSentInvites] = useState([]); // масив userId
-  const [recievedInvites, setReceivedInvites] = useState([]); // масив userId
 
   // отримуємо username
-  // const username = localStorage.getItem('username');
-  const [username] = useLocalStorage('username');
+  const [username] = useLocalStorage("username");
 
   // створюємо посилання сокету
   const socketRef = useRef(null);
@@ -31,105 +18,73 @@ const useSocket = (startGame) => {
   // функція відправлення запрошення
   const sendInvite = (toUserId) => {
     // відправка повідомлення
-    socketRef.current.emit('invite:send', toUserId);
+    socketRef.current.emit("invite:send", { toUserId });
     // додаємо в масив активних відправлених запрошень
-    setSentInvites(oldInvites => [...oldInvites, toUserId]);
+    setUsers((oldUsers) =>
+      oldUsers.map((user) =>
+        user.userId === toUserId ? { ...user, iInvited: true } : user
+      )
+    );
   };
 
   // функція відміни відправлення запрошення
   const cancelInvite = (toUserId) => {
     // відправка повідомлення
-    socketRef.current.emit('invite:cancel', toUserId);
+    socketRef.current.emit("invite:cancel", { toUserId });
     // вилучаємо з масиву активних відправлених запрошень
-    setSentInvites(oldInvites => oldInvites.filter(invite => invite !== toUserId));
+    setUsers((oldUsers) =>
+      oldUsers.map((user) =>
+        user.userId === toUserId ? { ...user, iInvited: false } : user
+      )
+    );
   };
 
   // функція відхилення запрошення
-  const rejectInvite = (fromUser) => {
+  const rejectInvite = (fromUserId) => {
     // відправка повідомлення
-    socketRef.current.emit('invite:reject', fromUser);
+    socketRef.current.emit("invite:reject", { fromUserId });
     // вилучаємо з масиву активних отриманих запрошень
-    setReceivedInvites(oldInvites => oldInvites.filter(invite => invite !== fromUser));
+    setUsers((oldUsers) =>
+      oldUsers.map((user) =>
+        user.userId === fromUserId ? { ...user, invitedMe: false } : user
+      )
+    );
   };
 
   // функція прийняття запрошення
-  const acceptInvite = (fromUser) => {
-    // відправка повідомлення
-    socketRef.current.emit('invite:accept', fromUser);
-    // відміна всіх відправлених запрошень
-    for (const toUserId of sentInvites) {
-      cancelInvite(toUserId);
-    }
-    // оновлення масиву відправлених запрошень
-    setSentInvites([]);
-    // відхилення всіх отриманих запрошень
-    for (const fromUser of recievedInvites) {
-      rejectInvite(fromUser);
-    }
-    // оновлення масиву отриманих запрошень
-    setReceivedInvites([]);
-    // далі має починатися гра...............................................................
-    const opponent = users.find(user => user.userId === fromUser);
-    startGame(opponent);
-  };
+  const acceptInvite = useCallback(
+    (fromUserId) => {
+      // відправка повідомлення
+      socketRef.current.emit("invite:accept", { fromUserId });
+      // відміна відправлених запрошень, відхилення отриманих запрошень
+      // оновлення масиву користувачів
+      setUsers((oldUsers) =>
+        oldUsers.map((user) => {
+          if (user.iInvited)
+            socketRef.current.emit("invite:cancel", { toUserId: user.userId });
+          if (user.invitedMe && user.userId !== fromUserId)
+            socketRef.current.emit("invite:reject", {
+              fromUserId: user.userId,
+            });
+          return { ...user, invitedMe: false, iInvited: false };
+        })
+      );
+      // об'єкт суперника
+      const opponent = users.find((user) => user.userId === fromUserId);
+      // зміна статусу на щось типу "у грі"
+      socketRef.current.emit("status:change", {
+        inGame: true,
+        inGameWith: opponent,
+      });
+      // далі має починатися гра
+      startGame(opponent);
+    },
+    [users, startGame]
+  );
 
   useEffect(() => {
-    // створюємо екземпляр сокету і записуємо id кімнати
+    // створюємо екземпляр сокету і записуємо username
     socketRef.current = io(SERVER_URL, { query: { username } });
-
-    // обробник надходжених користувачів онлайн
-    // ця подія буде надходити у разі, якщо під'єднається новий користувач або від'єднається старий
-    socketRef.current.on('users', (users) => {
-      // оновлюємо масив
-      setUsers(users);
-    });
-
-    socketRef.current.on('user:connected', (user) => {
-      // оновлюємо масив
-      setUsers(oldUsers => [user, ...oldUsers]);
-    });
-
-    socketRef.current.on('user:disconnected', (user) => {
-      // оновлюємо масив
-      setUsers(oldUsers => oldUsers.filter(usr => usr.userId !== user.userId));
-    });
-
-    // обробник отриманого запрошення
-    socketRef.current.on('invite:send', (fromUser) => {
-      // оновлюємо масив
-      setReceivedInvites(oldInvites => [fromUser, ...oldInvites]);
-    });
-
-    // обробник відміненого запрошення
-    socketRef.current.on('invite:cancel', (fromUser) => {
-      // оновлюємо масив
-      setReceivedInvites(oldInvites => oldInvites.filter(invite => invite !== fromUser));
-    });
-
-    // обробник прийнятого запрошення
-    socketRef.current.on('invite:accept', (toUserId) => {
-      // відміна всіх відправлених запрошень
-      for (const toUserId of sentInvites) {
-        cancelInvite(toUserId);
-      }
-      // оновлення масиву відправлених запрошень
-      setSentInvites([]);
-      // відхилення всіх отриманих запрошень
-      for (const fromUser of recievedInvites) {
-        rejectInvite(fromUser);
-      }
-      // оновлення масиву отриманих запрошень
-      setReceivedInvites([]);
-      // далі має починатися гра...............................................................
-      const opponent = users.find(user => user.userId === toUserId);
-      startGame(opponent);
-    });
-
-    // обробник відхиленого запрошення
-    socketRef.current.on('invite:reject', (toUserId) => {
-      // оновлюємо масив
-      setSentInvites(oldInvites => oldInvites.filter(invite => invite !== toUserId));
-    });
 
     return () => {
       // при розмонтуванні компоненту відключаємо сокет
@@ -137,35 +92,20 @@ const useSocket = (startGame) => {
     };
   }, [username]);
 
-  // коли змінюється масив відправлених запрошень,
-  // треба змінити масив користувачів і додати деяким властивість iInvited
   useEffect(() => {
-    setUsers(oldUsers => oldUsers.map(user => (
-      { ...user, iInvited: sentInvites.some(invite => user.userId === invite) }
-    )));
-  }, [sentInvites])
+    // видалення попередніх обробників
+    socketRef.current.offAny();
+    socketRef.current.removeAllListeners();
 
-  // коли змінюється масив отриманих запрошень,
-  // треба змінити масив користувачів і додати деяким властивість invitedMe
-  useEffect(() => {
-    setUsers(oldUsers => oldUsers.map(user => (
-      { ...user, invitedMe: recievedInvites.some(invite => user.userId === invite) }
-    )));
-    // якщо виникне ситуація, коли 2 користувачі одночасно відправлять запрошення
-    // і одночасно отримають подію, то у двох будуть висіти вхідні/вихідні запрошення,
-    // а також user.iInvited і user.invitedMe будуть одночасно true.
-    // В такій ситуації потрібно одразу почати гру
-    for (const user of users) {
-      if (user.iInvited && user.invitedMe) {
-        acceptInvite(user.userId);
-      }
-    }
-  }, [recievedInvites]);
-
-  // // отправляем на сервер событие "user:leave" перед перезагрузкой страницы ???????? хз нащо
-  // useBeforeUnload(() => {
-  //   socketRef.current.emit("user:leave", userId);
-  // });
+    // регістрація обробників подій
+    registerHandlers(
+      socketRef.current,
+      users,
+      setUsers,
+      acceptInvite,
+      startGame
+    );
+  }, [users, acceptInvite, startGame]);
 
   // хук повертає користувачів онлайн, функції відправлення,
   // відміни відправлення, відхилення та прийняття запрошення

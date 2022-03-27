@@ -1,5 +1,3 @@
-import { useState, useEffect } from "react";
-
 const usePlay = (roomId) => {
   //  тут реалізовується клієнтська сторона гри
   //  об'єкт зі своїм ігровим полем, з полем суперника
