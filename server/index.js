@@ -2,6 +2,10 @@
 
 const express = require('express');
 const { Server } = require('socket.io');
+const {
+  registerPlayersOnlineListeners,
+  registerGameListeners,
+} = require('./registerHandlers');
 
 const hostname = 'localhost';
 const port = 8000;
@@ -20,62 +24,34 @@ app.get('*', (req, res) => {
 const server = app.listen(port, hostname);
 const io = new Server(server);
 
+const games = new Map();
+
+io.use((socket, next) => {
+  const { username, userId, inGame, opponent, gameId } = socket.handshake.auth;
+  socket.player = { username, userId, inGame, opponent, gameId };
+  next();
+});
+
 io.on('connection', connection => {
-  const { username } = connection.handshake.query;
-  const player = { username, userId: connection.id, inGame: false };
-  connection.player = player;
+  const { player } = connection;
   console.log('player at connection:', player);
 
-  connection.broadcast.emit('user:connected', player);
+  connection.join(player.userId);
 
-  const players = [];
-  for (const [id, socket] of io.of('/').sockets) {
-    if (id === connection.id) continue;
-    players.push(socket.player);
-  }
-  connection.emit('users', players);
-  console.log({ playersOnline: players });
+  connection.broadcast.emit('user:connected', player);
 
   connection.onAny((...args) => {
     console.log(connection.player.username, 'send event:', ...args);
   });
 
-  connection.on('invite:send', ({ toUserId }) => {
-    io.to(toUserId).emit('invite:send', { fromUserId: player.userId });
-  });
-
-  connection.on('invite:cancel', ({ toUserId }) => {
-    io.to(toUserId).emit('invite:cancel', { fromUserId: player.userId });
-  });
-
-  connection.on('invite:reject', ({ fromUserId }) => {
-    io.to(fromUserId).emit('invite:reject', { toUserId: player.userId });
-  });
-
-  connection.on('invite:accept', ({ fromUserId }) => {
-    io.to(fromUserId).emit('invite:accept', { toUserId: player.userId });
-    //start new game here
-  });
-
-  connection.on('status:change', ({ inGame, inGameWith }) => {
-    for (const [id, socket] of io.of('/').sockets) {
-      if (id === connection.id || id === inGameWith.userId) continue;
-      socket.emit('status:change', {
-        fromUserId: player.userId,
-        inGame,
-        inGameWith,
-      });
-    }
-  });
-
   connection.on('disconnect', async () => {
-    const matchingSockets = await io.in(connection.id).allSockets();
-    const isDisconnected = matchingSockets.size === 0;
-    if (isDisconnected) {
-      connection.broadcast.emit('user:disconnected', player);
-      console.log(`user ${player.username} disconnected`);
-    }
+    connection.broadcast.emit('user:disconnected', player);
+    console.log(`user ${player.username} disconnected`);
   });
 
-  //new game events here(e.g. move, shipsSetup, gameOver etc)
+  if (!player.inGame) registerPlayersOnlineListeners(io, connection);
+  else registerGameListeners(io, connection, games);
+  // socket.on('ships', (ships) => {
+  //   games.set()
+  // });
 });

@@ -10,7 +10,6 @@ const Login = ({ username, setUsername }) => {
     if (trimmed.length > 2) {
       setUsername(trimmed);
       setError(false);
-      localStorage.setItem("username", JSON.stringify(trimmed));
       navigate("/home");
     } else setError(true);
   };

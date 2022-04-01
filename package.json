@@ -6,7 +6,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "nodemon server/index.js",
-    "build": "cd client && npm run build && cd .. && nodemon server/index.js"
+    "build": "npm run lint && cd client && npm run build && cd .. && nodemon server/index.js",
+    "lint": "cd client && npm run lint && cd .. && prettier -w server && eslint --fix server"
   },
   "repository": {
     "type": "git",

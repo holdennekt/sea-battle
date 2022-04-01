@@ -1,17 +1,11 @@
 import { Route, Routes } from "react-router-dom";
 import Login from "./components/Login";
 import Home from "./components/Home";
-import { useEffect, useState } from "react";
+import useLocalStorage from "./hooks/useLocalStorage";
+import Game from "./components/Game";
 
 function App() {
-  const [username, setUsername] = useState("");
-
-  useEffect(() => {
-    const savedUsername = JSON.parse(localStorage.getItem("username"));
-    if (savedUsername) {
-      setUsername(savedUsername);
-    }
-  }, []);
+  const [username, setUsername] = useLocalStorage("username", "");
 
   return (
     <div className="App">
@@ -21,6 +15,7 @@ function App() {
           element={<Login username={username} setUsername={setUsername} />}
         />
         <Route path="/home" element={<Home username={username} />} />
+        <Route path="/game" element={<Game />} />
       </Routes>
     </div>
   );

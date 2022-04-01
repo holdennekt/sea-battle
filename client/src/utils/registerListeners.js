@@ -52,7 +52,7 @@ const registerHandlers = (...args) => {
   });
 
   // обробник прийнятого запрошення
-  socket.on("invite:accept", ({ toUserId }) => {
+  socket.on("invite:accept", ({ toUserId, gameId }) => {
     // відміна відправлених запрошень, відхилення отриманих запрошень
     // оновлення масиву користувачів
     setUsers((oldUsers) =>
@@ -65,11 +65,9 @@ const registerHandlers = (...args) => {
       })
     );
     // об'єкт суперника
-    const opponent = users.find((user) => user.userId === toUserId);
-    // зміна статусу на щось типу "у грі"
-    socket.emit("status:change", { inGame: true, inGameWith: opponent });
+    const { username, userId } = users.find((user) => user.userId === toUserId);
     // далі має починатися гра
-    startGame(opponent);
+    startGame({ username, userId }, gameId);
   });
 
   // обробник відхиленого запрошення

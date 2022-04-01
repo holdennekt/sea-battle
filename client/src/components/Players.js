@@ -1,18 +1,23 @@
-const Players = (props) => {
-  const players = props.players.map((player) => {
+import usePlayers from "../hooks/usePlayers";
+
+const Players = ({ startGame }) => {
+  const { users, sendInvite, cancelInvite, rejectInvite, acceptInvite } =
+    usePlayers(startGame);
+
+  const players = users.map((player) => {
     let buttonsKeeper;
     if (player.invitedMe) {
       buttonsKeeper = (
         <div className="player-buttons">
           <button
             className="player-accept-button"
-            onClick={() => props.acceptInvite(player.userId)}
+            onClick={() => acceptInvite(player.userId)}
           >
             Accept
           </button>
           <button
             className="player-reject-button"
-            onClick={() => props.rejectInvite(player.userId)}
+            onClick={() => rejectInvite(player.userId)}
           >
             Reject
           </button>
@@ -24,7 +29,7 @@ const Players = (props) => {
           <button className="player-invite-disabled-button">Invited</button>
           <button
             className="player-cancel-button"
-            onClick={() => props.cancelInvite(player.userId)}
+            onClick={() => cancelInvite(player.userId)}
           >
             Cancel
           </button>
@@ -39,7 +44,7 @@ const Players = (props) => {
                 ? "player-invite-disabled-button"
                 : "player-invite-button"
             }
-            onClick={player.inGame ? null : () => props.sendInvite(player.userId)}
+            onClick={player.inGame ? null : () => sendInvite(player.userId)}
           >
             Invite
           </button>
@@ -50,7 +55,9 @@ const Players = (props) => {
       <div className="player" key={player.userId}>
         <p className="player-username">{player.username}</p>
         <p className="player-status">
-          {player.inGame ? `in game with ${player.inGameWith.username}` : "in lobby"}
+          {player.inGame
+            ? `in game with ${player.opponent.username}`
+            : "in lobby"}
         </p>
         {buttonsKeeper}
       </div>

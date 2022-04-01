@@ -1,24 +1,27 @@
+import { nanoid } from "nanoid";
 import { useCallback, useEffect, useRef, useState } from "react";
 import io from "socket.io-client";
-import registerHandlers from "./registerListeners";
+import registerHandlers from "../utils/registerListeners";
 import useLocalStorage from "./useLocalStorage";
 
 const SERVER_URL = "http://localhost:8000";
 
-const useSocket = (startGame) => {
+const usePlayers = (startGame) => {
   // локальний стан гравців онлайн і статусу їх запрошень
   const [users, setUsers] = useState([]);
 
   // отримуємо username
   const [username] = useLocalStorage("username");
+  const [userId] = useLocalStorage("userId", nanoid());
 
   // створюємо посилання сокету
   const socketRef = useRef(null);
+  const socket = socketRef.current;
 
   // функція відправлення запрошення
   const sendInvite = (toUserId) => {
     // відправка повідомлення
-    socketRef.current.emit("invite:send", { toUserId });
+    socket.emit("invite:send", { toUserId });
     // додаємо в масив активних відправлених запрошень
     setUsers((oldUsers) =>
       oldUsers.map((user) =>
@@ -30,7 +33,7 @@ const useSocket = (startGame) => {
   // функція відміни відправлення запрошення
   const cancelInvite = (toUserId) => {
     // відправка повідомлення
-    socketRef.current.emit("invite:cancel", { toUserId });
+    socket.emit("invite:cancel", { toUserId });
     // вилучаємо з масиву активних відправлених запрошень
     setUsers((oldUsers) =>
       oldUsers.map((user) =>
@@ -42,7 +45,7 @@ const useSocket = (startGame) => {
   // функція відхилення запрошення
   const rejectInvite = (fromUserId) => {
     // відправка повідомлення
-    socketRef.current.emit("invite:reject", { fromUserId });
+    socket.emit("invite:reject", { fromUserId });
     // вилучаємо з масиву активних отриманих запрошень
     setUsers((oldUsers) =>
       oldUsers.map((user) =>
@@ -55,42 +58,42 @@ const useSocket = (startGame) => {
   const acceptInvite = useCallback(
     (fromUserId) => {
       // відправка повідомлення
-      socketRef.current.emit("invite:accept", { fromUserId });
+      const gameId = nanoid();
+      socket.emit("invite:accept", { fromUserId, gameId });
       // відміна відправлених запрошень, відхилення отриманих запрошень
       // оновлення масиву користувачів
       setUsers((oldUsers) =>
         oldUsers.map((user) => {
           if (user.iInvited)
-            socketRef.current.emit("invite:cancel", { toUserId: user.userId });
+            socket.emit("invite:cancel", { toUserId: user.userId });
           if (user.invitedMe && user.userId !== fromUserId)
-            socketRef.current.emit("invite:reject", {
+            socket.emit("invite:reject", {
               fromUserId: user.userId,
             });
           return { ...user, invitedMe: false, iInvited: false };
         })
       );
       // об'єкт суперника
-      const opponent = users.find((user) => user.userId === fromUserId);
-      // зміна статусу на щось типу "у грі"
-      socketRef.current.emit("status:change", {
-        inGame: true,
-        inGameWith: opponent,
-      });
+      const { username, userId } = users.find(
+        (user) => user.userId === fromUserId
+      );
       // далі має починатися гра
-      startGame(opponent);
+      startGame({ username, userId }, gameId);
     },
-    [users, startGame]
+    [users, startGame, socket]
   );
 
   useEffect(() => {
     // створюємо екземпляр сокету і записуємо username
-    socketRef.current = io(SERVER_URL, { query: { username } });
+    socketRef.current = io(SERVER_URL, {
+      auth: { username, userId, inGame: false, inGameWith: null },
+    });
 
     return () => {
       // при розмонтуванні компоненту відключаємо сокет
       socketRef.current.disconnect();
     };
-  }, [username]);
+  }, [username, userId]);
 
   useEffect(() => {
     // видалення попередніх обробників
@@ -112,4 +115,4 @@ const useSocket = (startGame) => {
   return { users, sendInvite, cancelInvite, rejectInvite, acceptInvite };
 };
 
-export default useSocket;
+export default usePlayers;

@@ -3,25 +3,23 @@ import Game from "./Game";
 import Players from "./Players";
 import Logo from "../images/seabattle-logo.jpeg";
 import { useState } from "react";
-import useSocket from "../hooks/useSocket";
 
 const Home = ({ username }) => {
   const [game, setGame] = useState({ isStarted: false });
+
   const navigate = useNavigate();
 
-  const startGame = (opponent) => {
+  const startGame = (opponent, gameId) => {
     setGame({
       isStarted: true,
       opponent,
+      gameId,
     });
   };
 
   const endGame = () => {
     setGame({ isStarted: false });
   };
-
-  const { users, sendInvite, cancelInvite, rejectInvite, acceptInvite } =
-    useSocket(startGame, endGame);
 
   return (
     <div className="home-container">
@@ -34,15 +32,9 @@ const Home = ({ username }) => {
         </p>
       </nav>
       {game.isStarted ? (
-        <Game opponent={game.opponent} />
+        <Game opponent={game.opponent} gameId={game.gameId} endGame={endGame} />
       ) : (
-        <Players
-          players={users}
-          sendInvite={sendInvite}
-          cancelInvite={cancelInvite}
-          rejectInvite={rejectInvite}
-          acceptInvite={acceptInvite}
-        />
+        <Players startGame={startGame} />
       )}
     </div>
   );
