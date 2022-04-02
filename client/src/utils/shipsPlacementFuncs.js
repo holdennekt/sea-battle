@@ -27,11 +27,7 @@ const getCoords = (parts) => {
   return { startI, startJ, endI, endJ };
 };
 
-const isShipPositionValid = (shipOrIndex, ships) => {
-  // функція може викликатися з першим аргументом у якості
-  // індекса корабля у масиві або у якості самого корабля
-  const ship =
-    typeof shipOrIndex === "number" ? ships[shipOrIndex] : shipOrIndex;
+const isShipPositionValid = (ship, ships) => {
   // перевірка чи не вийшов корабель за межі поля
   const shipIndexes = [];
   for (const part of ship.parts) {

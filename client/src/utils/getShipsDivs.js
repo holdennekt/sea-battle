@@ -1,4 +1,4 @@
-const getShipsDivs = (ships, currentShipIndex, setCurrentShipIndex) => {
+const getShipsDivs = (ships, currentShipId, setCurrentShipId) => {
   const shipsDivs = ships.map((ship, i) => {
     const shipImgs = ship.parts.map((part, j) => (
       <img
@@ -16,14 +16,14 @@ const getShipsDivs = (ships, currentShipIndex, setCurrentShipIndex) => {
       position: "absolute",
       top: `${(ship.y + ship.parts[0].y) * 60}px`,
       left: `${(ship.x + ship.parts[0].x) * 60}px`,
-      backgroundColor: currentShipIndex === i ? "#6464ff" : "transparent",
+      backgroundColor: currentShipId === ship.id ? "#6464ff" : "transparent",
     };
     return (
       <div
         key={i}
         className="game-ship-container"
         style={style}
-        onClick={setCurrentShipIndex ? () => setCurrentShipIndex(i) : null}
+        onClick={setCurrentShipId ? () => setCurrentShipId(ship.id) : null}
       >
         {shipImgs}
       </div>

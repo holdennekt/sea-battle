@@ -10,16 +10,16 @@ import startShips from "../utils/startShips";
 
 const Preparation = ({ submitShips, isWaiting }) => {
   const [ships, setShips] = useState(() => getRandomPlacement(startShips));
-  const [currentShipIndex, setCurrentShipIndex] = useState(-1);
+  const [currentShipId, setCurrentShipId] = useState("");
 
   const placeOnCell = (index) => {
-    if (currentShipIndex < 0 || currentShipIndex > 9) return;
+    if (currentShipId < 0 || currentShipId > 9) return;
     const clonedShips = clone(ships);
-    const ship = clonedShips[currentShipIndex];
+    const ship = clonedShips.find((ship) => ship.id === currentShipId);
     ship.x = index % 10;
     ship.y = Math.floor(index / 10);
     if (isShipPositionValid(ship, clonedShips)) setShips(clonedShips);
-    setCurrentShipIndex(-1);
+    setCurrentShipId("");
   };
 
   const cells = new Array(100)
@@ -33,11 +33,12 @@ const Preparation = ({ submitShips, isWaiting }) => {
     ));
 
   const rotate = () => {
-    if (currentShipIndex < 0 || currentShipIndex > 9) return;
-    const newShips = ships.map((ship, index) =>
-      currentShipIndex === index ? getRotated(ship) : ship
+    if (currentShipId < 0 || currentShipId > 9) return;
+    const ship = ships.find((ship) => ship.id === currentShipId);
+    const newShips = ships.map((ship) =>
+      ship.id === currentShipId ? getRotated(ship) : ship
     );
-    if (isShipPositionValid(currentShipIndex, newShips)) setShips(newShips);
+    if (isShipPositionValid(ship, newShips)) setShips(newShips);
   };
 
   return (
@@ -47,7 +48,7 @@ const Preparation = ({ submitShips, isWaiting }) => {
       )}
       <div className="game-field">
         {cells}
-        {getShipsDivs(ships, currentShipIndex, setCurrentShipIndex)}
+        {getShipsDivs(ships, currentShipId, setCurrentShipId)}
       </div>
       <div className="preparation-buttons-container">
         <button className="preparation-button" onClick={() => rotate()}>
