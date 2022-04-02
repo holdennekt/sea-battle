@@ -1,9 +1,9 @@
 import { getShipsDivs, getPartsImgs } from "../utils/getShipsDivs";
+import Confetti from "react-confetti";
+import useLocalStorage from "../hooks/useLocalStorage";
 
 const GameProcess = (props) => {
-  const myCells = new Array(100)
-    .fill()
-    .map((val, i) => <div key={i} className="game-field-cell"></div>);
+  const userId = useLocalStorage("userId");
 
   const handleClick = (index) => {
     const x = index % 10;
@@ -11,45 +11,28 @@ const GameProcess = (props) => {
     props.shoot({ x, y });
   };
 
-  const opponentCells = new Array(100)
-    .fill()
-    .map((val, i) => (
+  const myCells = new Array(100).fill().map((val, i) => {
+    const shot = props.opponentShots.find((shot) => shot.y * 10 + shot.x === i);
+    const style = shot && {
+      backgroundImage: `url(${shot.imgSrc})`,
+      backgroundSize: "60px 60px",
+    };
+    return <div key={i} className="game-field-cell" style={style}></div>;
+  });
+
+  const opponentCells = new Array(100).fill().map((val, i) => {
+    const shot = props.myShots.find((shot) => shot.y * 10 + shot.x === i);
+    const style = shot && {
+      backgroundImage: `url(${shot.imgSrc})`,
+      backgroundSize: "60px 60px",
+    };
+    return (
       <div
         key={i}
         className="game-field-cell"
         onClick={props.isMyTurn ? () => handleClick(i) : null}
+        style={style}
       ></div>
-    ));
-
-  const myShotsImgs = props.myShots.map((shot, index) => {
-    const style = {
-      top: `${shot.y * 60}px`,
-      left: `${shot.x * 60}px`,
-    };
-    return (
-      <img
-        key={index}
-        alt="shot"
-        className="game-field-shot"
-        src={shot.imgSrc}
-        style={style}
-      ></img>
-    );
-  });
-
-  const opponentShotsImgs = props.opponentShots.map((shot, index) => {
-    const style = {
-      top: `${shot.y * 60}px`,
-      left: `${shot.x * 60}px`,
-    };
-    return (
-      <img
-        key={index}
-        alt="shot"
-        className="game-field-shot"
-        src={shot.imgSrc}
-        style={style}
-      ></img>
     );
   });
 
@@ -64,14 +47,16 @@ const GameProcess = (props) => {
         <div className="game-field">
           {myCells}
           {getShipsDivs(props.myShips)}
-          {opponentShotsImgs}
         </div>
         <div className="game-field">
           {opponentCells}
           {getPartsImgs(props.opponentShips)}
-          {myShotsImgs}
         </div>
       </div>
+      {props.winner && (
+        <h1 className="game-winner">Winner is {props.winner.username}</h1>
+      )}
+      {props.winner && props.winner.userId === userId && <Confetti />}
     </div>
   );
 };

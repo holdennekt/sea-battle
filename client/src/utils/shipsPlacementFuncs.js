@@ -10,15 +10,20 @@ const getShipsByIndexes = (ships) => {
   return shipsByIndexes;
 };
 
+const normalize = (index) => {
+  const normalized = index < 0 ? 0 : index;
+  return normalized > 9 ? 9 : normalized;
+};
+
 const getCoords = (parts) => {
   const firstPart = parts[0];
   const lastPart = parts[parts.length - 1];
   // отримання координат верхньої лівої і нижньої правої
   // точок прямокутника, у якому треба шукати інші кораблі
-  const startI = firstPart.y - 1 < 0 ? firstPart.y : firstPart.y - 1;
-  const startJ = firstPart.x - 1 < 0 ? firstPart.x : firstPart.x - 1;
-  const endI = lastPart.y + 1 > 9 ? lastPart.y : lastPart.y + 1;
-  const endJ = lastPart.x + 1 > 9 ? lastPart.x : lastPart.x + 1;
+  const startI = normalize(firstPart.y - 1);
+  const startJ = normalize(firstPart.x - 1);
+  const endI = normalize(lastPart.y + 1);
+  const endJ = normalize(lastPart.x + 1);
   return { startI, startJ, endI, endJ };
 };
 
@@ -39,7 +44,7 @@ const isShipPositionValid = (shipOrIndex, ships) => {
   // об'єкт, де ключі це одновимірні координати частинок кораблів
   const shipsByIndexes = getShipsByIndexes(ships);
   // для зручності отримую масив з одновимірних індексів своїх же частинок корабля
-  const shipSelfIndexes100 = shipIndexes.map((part) => part.y * 10 + part.x);
+  const shipIndexes100 = shipIndexes.map((part) => part.y * 10 + part.x);
   // отримання координат верхньої лівої і нижньої правої
   // точок прямокутника, у якому треба шукати інші кораблі
   const { startI, startJ, endI, endJ } = getCoords(shipIndexes);
@@ -49,7 +54,7 @@ const isShipPositionValid = (shipOrIndex, ships) => {
       // для зручності отримую одновимірний індекс клітинки, що перевіряю
       const index100 = i * 10 + j;
       // якщо ця клітинка належить самому кораблю, то її треба пропустити
-      if (shipSelfIndexes100.some((index) => index === index100)) continue;
+      if (shipIndexes100.some((index) => index === index100)) continue;
       // якщо у раніше отриманому об'єкті на цьому індексі
       // є частинка корабля, то така позиція неможлива
       if (shipsByIndexes[index100]) return false;
@@ -82,10 +87,12 @@ const getPositionsForShip = (ship, ships) => {
       const index100 = i * 10 + j;
       if (shipsByIndexes[index100]) continue;
       const position = { ...ship, x: j, y: i };
+      if (j > 10 - position.length) continue;
       if (isShipPositionValid(position, ships)) {
         validPositions.push(position);
       }
       const rotatedPosition = getRotated(position);
+      if (i > 10 - rotatedPosition.length) continue;
       if (isShipPositionValid(rotatedPosition, ships)) {
         validPositions.push(rotatedPosition);
       }

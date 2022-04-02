@@ -3,7 +3,6 @@ import GamePreparation from "./GamePreparation";
 import GameProcess from "./GameProcess";
 
 const Game = ({ opponent, gameId, endGame }) => {
-  // console.log(opponent);
   const {
     isGameStarted,
     myShips,
@@ -12,10 +11,10 @@ const Game = ({ opponent, gameId, endGame }) => {
     opponentShots,
     isMyTurn,
     isWaiting,
+    winner,
     submitShips,
     shoot,
   } = useGame(opponent, gameId, endGame);
-  // setTimeout(endGame, 5000);
 
   return (
     <main className="game-container">
@@ -26,6 +25,7 @@ const Game = ({ opponent, gameId, endGame }) => {
           opponentShips={opponentShips}
           opponentShots={opponentShots}
           isMyTurn={isMyTurn}
+          winner={winner}
           shoot={shoot}
         />
       ) : (

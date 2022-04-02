@@ -20,9 +20,6 @@ class Game {
     this[player1.userId] = player1;
     this[player2.userId] = player2;
   }
-  setToMove(toMove) {
-    this.toMove = toMove;
-  }
   setShips(userId, ships) {
     const myParts = {};
     for (const ship of ships) {
@@ -56,7 +53,7 @@ class Game {
         ship => ship.id === part.parentId
       );
       parentOpShip.parts.push(part);
-      parentOpShip.parts.sort((a, b) => (a.x + a.y) - (b.x + b.y));
+      parentOpShip.parts.sort((a, b) => a.x + a.y - (b.x + b.y));
       const parentMyShip = this[opUserId].myShips.find(
         ship => ship.id === part.parentId
       );
@@ -75,6 +72,23 @@ class Game {
       };
     }
     return { result: { x, y }, isHit: false };
+  }
+  isGameOver(userId) {
+    const opUserId = this[userId].opponent.userId;
+    const myAliveShips = this[userId].myShips.filter(ship => ship.isAlive);
+    if (myAliveShips.length === 0) {
+      const winner = {
+        username: this[userId].opponent.username,
+        userId: opUserId,
+      };
+      return { isGameOver: true, winner };
+    }
+    const opAliveShips = this[opUserId].myShips.filter(ship => ship.isAlive);
+    if (opAliveShips.length === 0) {
+      const winner = { username: this[userId].username, userId };
+      return { isGameOver: true, winner };
+    }
+    return { isGameOver: false };
   }
 }
 
@@ -124,7 +138,6 @@ const registerGameListeners = (io, socket, games) => {
   socket.on('ships', ships => {
     const game = games.get(player.gameId);
     game.setShips(player.userId, ships);
-    game.setToMove(player.userId);
     const opUserId = player.opponent.userId;
     if (game[opUserId].isReady) {
       socket.emit('game:started', game[player.userId].opShips);
@@ -137,19 +150,31 @@ const registerGameListeners = (io, socket, games) => {
     const game = games.get(player.gameId);
     const { result, isHit } = game.getMoveResult(player.userId, { x, y });
     if (isHit) {
-      console.log(result);
-      socket.emit('move:result', { result: result.opShip, isHit });
-      io.to(player.opponent.userId).emit('move:opponent', {
-        result: result.myShip,
-        isHit,
-      });
-      socket.emit('move:request');
-      game.setToMove(player.userId);
+      const { isGameOver, winner } = game.isGameOver(player.userId);
+      socket.emit('my:hit', result.opShip);
+      io.to(player.opponent.userId).emit('opponent:hit', result.myShip);
+      if (isGameOver) {
+        socket.emit('game:over', winner);
+        const myShips = game[player.userId].myShips;
+        const myAliveShips = myShips.filter(ship => ship.isAlive);
+        for (const ship of myAliveShips) {
+          const newParts = ship.parts.map(part => ({
+            ...part,
+            x: ship.x + part.x,
+            y: ship.y + part.y,
+          }));
+          io.to(player.opponent.userId).emit('my:hit', {
+            ...ship,
+            parts: newParts,
+          });
+        }
+        io.to(player.opponent.userId).emit('game:over', winner);
+        games.delete(player.gameId);
+      } else socket.emit('move:request');
     } else {
-      socket.emit('move:result', { result, isHit });
-      io.to(player.opponent.userId).emit('move:opponent', { result, isHit });
+      socket.emit('my:miss', result);
+      io.to(player.opponent.userId).emit('opponent:miss', result);
       io.to(player.opponent.userId).emit('move:request');
-      game.setToMove(player.opponent.userId);
     }
   });
 };

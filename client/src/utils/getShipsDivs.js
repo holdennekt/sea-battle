@@ -33,6 +33,7 @@ const getShipsDivs = (ships, currentShipIndex, setCurrentShipIndex) => {
 };
 
 const getPartsImgs = (ships) => {
+  const imgs = [];
   const parts = {};
   for (const ship of ships) {
     for (const part of ship.parts) {
@@ -40,13 +41,13 @@ const getPartsImgs = (ships) => {
       parts[index100] = part;
     }
   }
-  const imgs = [];
   for (const key in parts) {
     const part = parts[key];
     const style = {
       position: "absolute",
       top: `${part.y * 60}px`,
       left: `${part.x * 60}px`,
+      transform: `rotate(${part.rotation}deg)`,
     };
     const img = (
       <img

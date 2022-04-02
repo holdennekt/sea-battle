@@ -259,6 +259,7 @@ nav {
   display: flex;
   flex-direction: column;
   align-items: center;
+  position: relative;
 }
 
 .game-fields-container {
@@ -271,4 +272,13 @@ nav {
   position: absolute;
   width: 60px;
   height: 60px;
+}
+
+.game-winner {
+  margin: 0;
+  position: absolute;
+  top: 50%;
+  transform: translate(0%, -50%);
+  font-family: "Karla";
+  font-size: 50px;
 }

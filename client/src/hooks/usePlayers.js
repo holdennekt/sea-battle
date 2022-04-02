@@ -1,7 +1,7 @@
 import { nanoid } from "nanoid";
 import { useCallback, useEffect, useRef, useState } from "react";
 import io from "socket.io-client";
-import registerHandlers from "../utils/registerListeners";
+import registerPlayersListeners from "../utils/registerPlayersListeners";
 import useLocalStorage from "./useLocalStorage";
 
 const SERVER_URL = "http://localhost:8000";
@@ -96,18 +96,20 @@ const usePlayers = (startGame) => {
   }, [username, userId]);
 
   useEffect(() => {
-    // видалення попередніх обробників
-    socketRef.current.offAny();
-    socketRef.current.removeAllListeners();
-
     // регістрація обробників подій
-    registerHandlers(
+    registerPlayersListeners(
       socketRef.current,
       users,
       setUsers,
       acceptInvite,
       startGame
     );
+
+    return () => {
+      // видалення попередніх обробників
+      socketRef.current.offAny();
+      socketRef.current.removeAllListeners();
+    };
   }, [users, acceptInvite, startGame]);
 
   // хук повертає користувачів онлайн, функції відправлення,

@@ -1,9 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import io from "socket.io-client";
 import useLocalStorage from "./useLocalStorage";
-import hit from "../images/hit.png";
-import dot from "../images/dot.png";
-import { getCoords } from "../utils/shipsPlacementFuncs";
+import registerGameListeners from "../utils/registerGameListeners";
 
 const SERVER_URL = "http://localhost:8000";
 
@@ -17,6 +15,7 @@ const useGame = (opponent, gameId, endGame) => {
   const [opponentShots, setOpponentShots] = useState([]);
   const [isMyTurn, setIsMyTurn] = useState(false);
   const [isWaiting, setIsWaiting] = useState(false);
+  const [winner, setWinner] = useState();
 
   const [username] = useLocalStorage("username");
   const [userId] = useLocalStorage("userId");
@@ -34,111 +33,31 @@ const useGame = (opponent, gameId, endGame) => {
     setIsMyTurn(false);
   };
 
+  const onGameFinished = (winner) => {
+    setWinner(winner);
+    setTimeout(endGame, 10000);
+  };
+
   useEffect(() => {
     // створюємо екземпляр сокету і записуємо username
     socketRef.current = io(SERVER_URL, {
       auth: { username, userId, inGame: true, opponent, gameId },
     });
 
-    socketRef.current.onAny((...args) => {
-      console.log("socket recieved event:", args);
-    });
-
-    socketRef.current.on("game:started", (opponentShips) => {
-      setIsWaiting(false);
-      setIsGameStarted(true);
-      setOpponentShips(opponentShips);
-    });
-
-    socketRef.current.on("move:request", () => {
-      setIsMyTurn(true);
-    });
-
-    socketRef.current.on("move:result", ({ result, isHit }) => {
-      if (isHit) {
-        if (!result.isAlive) {
-          const shipSelfIndexes100 = result.parts.map(
-            (part) => part.y * 10 + part.x
-          );
-          const { startI, startJ, endI, endJ } = getCoords(result.parts);
-          for (let i = startI; i <= endI; i++) {
-            for (let j = startJ; j <= endJ; j++) {
-              const index100 = i * 10 + j;
-              if (shipSelfIndexes100.some((index) => index === index100))
-                continue;
-              setMyShots((oldShots) => {
-                const existingShot = oldShots.find(
-                  (shot) => shot.x === j && shot.y === i
-                );
-                const newShots = [...oldShots];
-                if (!existingShot) newShots.push({ x: j, y: i, imgSrc: dot });
-                return newShots;
-              });
-            }
-          }
-        }
-        const newParts = result.parts.map((part) => ({ ...part, imgSrc: hit }));
-        setOpponentShips((oldShips) =>
-          oldShips.map((ship) =>
-            ship.id === result.id ? { ...result, parts: newParts } : ship
-          )
-        );
-      } else {
-        setMyShots((oldShots) => [
-          ...oldShots,
-          { x: result.x, y: result.y, imgSrc: dot },
-        ]);
-      }
-    });
-
-    socketRef.current.on("move:opponent", ({ result, isHit }) => {
-      if (isHit) {
-        if (!result.isAlive) {
-          const newParts = result.parts.map((part) => ({
-            ...part,
-            x: part.x + result.x,
-            y: part.y + result.y,
-          }));
-          const shipSelfIndexes100 = newParts.map(
-            (part) => part.y * 10 + part.x
-          );
-          const { startI, startJ, endI, endJ } = getCoords(newParts);
-          for (let i = startI; i <= endI; i++) {
-            for (let j = startJ; j <= endJ; j++) {
-              const index100 = i * 10 + j;
-              if (shipSelfIndexes100.some((index) => index === index100))
-                continue;
-              setOpponentShots((oldShots) => {
-                const existingShot = oldShots.find(
-                  (shot) => shot.x === j && shot.y === i
-                );
-                const newShots = [...oldShots];
-                if (!existingShot) newShots.push({ x: j, y: i, imgSrc: dot });
-                return newShots;
-              });
-            }
-          }
-        }
-        const newParts = result.parts.map((part) =>
-          part.isAlive === false ? { ...part, imgSrc: hit } : part
-        );
-        setMyShips((oldShips) =>
-          oldShips.map((ship) =>
-            ship.id === result.id ? { ...result, parts: newParts } : ship
-          )
-        );
-      } else {
-        setOpponentShots((oldShots) => [
-          ...oldShots,
-          { x: result.x, y: result.y, imgSrc: dot },
-        ]);
-      }
-    });
+    registerGameListeners(
+      socketRef.current,
+      setIsWaiting,
+      setIsGameStarted,
+      setIsMyTurn,
+      setMyShips,
+      setMyShots,
+      setOpponentShips,
+      setOpponentShots,
+      onGameFinished
+    );
 
     return () => {
       // при розмонтуванні компоненту відключаємо сокет
-      socketRef.current.off("move:result");
-      socketRef.current.off("move:opponent");
       socketRef.current.disconnect();
     };
   }, [username, userId, gameId, opponent]);
@@ -151,6 +70,7 @@ const useGame = (opponent, gameId, endGame) => {
     opponentShots,
     isMyTurn,
     isWaiting,
+    winner,
     submitShips,
     shoot,
   };

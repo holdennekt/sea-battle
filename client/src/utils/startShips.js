@@ -1,4 +1,3 @@
-import { nanoid } from "nanoid";
 import nose from "../images/part-1.png";
 import middle from "../images/part-2.png";
 import tail from "../images/part-3.png";

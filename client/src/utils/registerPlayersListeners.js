@@ -1,4 +1,4 @@
-const registerHandlers = (...args) => {
+const registerPlayersListeners = (...args) => {
   const [socket, users, setUsers, acceptInvite, startGame] = args;
 
   socket.onAny((...args) => {
@@ -90,4 +90,4 @@ const registerHandlers = (...args) => {
   });
 };
 
-export default registerHandlers;
+export default registerPlayersListeners;

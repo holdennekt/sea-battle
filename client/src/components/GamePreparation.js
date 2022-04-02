@@ -55,7 +55,7 @@ const Preparation = ({ submitShips, isWaiting }) => {
         </button>
         <button
           className="preparation-button"
-          onClick={() => setShips((oldShips) => getRandomPlacement(oldShips))}
+          onClick={() => setShips(getRandomPlacement(startShips))}
         >
           Place ships randomly
         </button>

@@ -5,7 +5,7 @@ const { Server } = require('socket.io');
 const {
   registerPlayersOnlineListeners,
   registerGameListeners,
-} = require('./registerHandlers');
+} = require('./registerListeners');
 
 const hostname = 'localhost';
 const port = 8000;
